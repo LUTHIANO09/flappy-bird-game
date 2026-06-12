@@ -25,6 +25,18 @@ let pipeWidth = 64; //width/height ratio =384/3072 =1/8
 let pipeHeight = 512;
 let pipeX = boardWidth;
 let pipeY = 0
+
+let topPipeImg;
+let bottomPipeImg;
+
+//physics
+    let velocityX = -2; //pipes moving left speed
+    let velocityY = 0; // bird jump speed
+    let gravity = 0.4;
+
+    let gameOver = false;
+
+
 window.onload = function() {
     board = document.getElementById("board");
     board.height = boardHeight;
@@ -42,7 +54,19 @@ window.onload = function() {
         context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
     }
 
+    topPipeImg = new Image();
+    topPipeImg.src = "./toppipe.png";
+
+    bottomPipeImg = new Image();
+    bottomPipeImg.src = "./bottompipe.png";
+
+    
+
+
+
     requestAnimationFrame(update);
+    setInterval(placePipes, 1500); // every 1.5 seconds 
+    document.addEventListener("keydown", moveBird);
 }
 
 function update() {
@@ -50,5 +74,64 @@ function update() {
     context.clearRect(0, 0, board.width, board.height);
 
     //bird 
+    velocityY += gravity;
+    // bird.y += velocityY; 
+    bird.y = Math.max(bird.y + velocityY, 0); //apply gravity to current bird.y. limit the bird.y to top of the canvas 
     context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
+
+    //pipes
+    for (let i = 0; i < pipeArray.length; i++){
+        let pipe = pipeArray[i];
+        pipe.x += velocityX;
+        context.drawImage(pipe.img, pipe.x, pipe.y, pipe.width, pipe.height);
+
+        if (detectCollision(bird, pipe)){
+            gameOver = true;
+        }
+    }
+}
+
+function placePipes() {
+
+    //(0-1) * pipeHeight/2
+    // e -> -128 (pipeHeight/4)
+    // 1 -> -128 -256 (pipeHeight/4 - pipeHeight/2) = -3/4 pipeHeight
+
+    let randomPipeY = pipeY - pipeHeight/4 - Math.random()*(pipeHeight/2);
+    let openingSpace = board.height/4;
+
+    let topPipe = {
+        img : topPipeImg,
+        x : pipeX,
+        y : randomPipeY,
+        width : pipeWidth,
+        height : pipeHeight,
+        passed : false
+    }
+
+    pipeArray.push(topPipe);
+
+    let bottomPipe = {
+        img : bottomPipeImg,
+        x : pipeX,
+        y : randomPipeY + pipeHeight + openingSpace,
+        width : pipeWidth,
+        height : pipeHeight,
+        passed : false
+    }
+    pipeArray.push(bottomPipe);
+}
+
+function moveBird(e){
+    if (e.code == "Space" || e.code == "ArrowUp" || e.code == "keyX"){
+        //make the bird jump
+        velocityY = -6;
+    }
+}
+
+function detectCollision(a, b){
+    return a.x < b.x + b.width &&
+           a.x + a.width > b.x &&
+           a.y < b.y + b.height &&
+           a.y + a.height > b.y;
 }
